@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Turnero • Admin v2.1</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root{
+      --bg: #0f172a;         /* slate-900 */
+      --panel: rgba(15,23,42,.65);
+      --border: #1f2937;     /* slate-800 */
+      --muted: #94a3b8;      /* slate-400 */
+      --past: #9CA3AF;       /* gray-400 */
+      --now: #F59E0B;        /* amber-500 */
+      --ok: #10B981;         /* emerald-500 */
+      --bad: #EF4444;        /* red-500 */
+      --warn: #f59e0b;       /* amber-500 */
+      --noshow:#64748b;      /* slate-500 */
+    }
+
+    .glass{background:var(--panel); border:1px solid var(--border); border-radius:18px; box-shadow:0 0 0 1px rgba(15,23,42,.25) inset, 0 10px 30px rgba(0,0,0,.25)}
+    .chip{background:rgba(15,23,42,.5); border:1px solid var(--border);}
+    .chip-active{box-shadow:0 0 0 2px rgba(16,185,129,.35) inset; background:rgba(30,41,59,.8)}
+    .booking-block{transition: transform .12s ease, box-shadow .12s ease;}
+    .booking-block:hover{transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.25)}
+    .badge{font-size:.75rem; letter-spacing:.02em}
+    .scroll-gradient{mask-image: linear-gradient(to right, transparent 0, black 28px, black calc(100% - 28px), transparent 100%)}
+    .btn{border:1px solid var(--border); background:rgba(15,23,42,.6)}
+    .disabled{opacity:.6; pointer-events:none}
+    .sidebtn-active { outline:2px solid rgb(34 197 94 / .35); background: rgb(30 41 59 / .9) !important; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 text-[16px] md:text-[17px]">
+  <!-- Sidebar -->
+  <aside class="fixed inset-y-0 left-0 w-16 bg-slate-900/60 border-r border-slate-800 p-3 flex flex-col items-center gap-3">
+    <a href="index.updated.html" class="w-full aspect-square rounded-2xl btn grid place-items-center sidebtn" aria-label="Turnero" title="Turnero" data-route="home"><i data-lucide="home" class="h-6 w-6"></i></a>
+    <a href="canchas.updated.html" class="w-full aspect-square rounded-2xl btn grid place-items-center sidebtn" aria-label="Canchas" title="Canchas" data-route="canchas"><i data-lucide="settings" class="h-6 w-6"></i></a>
+    <a href="report.updated.html" class="w-full aspect-square rounded-2xl btn grid place-items-center sidebtn" aria-label="Reportes" title="Reportes" data-route="reports"><i data-lucide="bar-chart-3" class="h-6 w-6"></i></a>
+  </aside>
+  
+
+  <!-- Main -->
+  <main class="ml-[4.75rem] p-6 md:p-8 space-y-6">
+    <!-- Header + KPIs -->
+    <header class="flex items-center justify-between">
+      <h1 class="text-3xl md:text-4xl font-semibold tracking-tight">Turnos del día</h1>
+    </header>
+
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-5">
+      <div class="glass p-5">
+        <p class="text-base text-slate-300">Ocupación (hoy)</p>
+        <p id="kpi-occ" class="text-4xl font-bold">—</p>
+      </div>
+      <div class="glass p-5">
+        <p class="text-base text-slate-300">Reservas confirmadas</p>
+        <p id="kpi-conf" class="text-4xl font-bold">—</p>
+      </div>
+      <div class="glass p-5">
+        <p class="text-base text-slate-300">Cancelaciones</p>
+        <p id="kpi-canc" class="text-4xl font-bold">—</p>
+      </div>
+    
+      <div class="glass p-5">
+        <p class="text-base text-slate-300">Ingresos proyectados (hoy)</p>
+        <p id="kpi-rev" class="text-4xl font-bold">—</p>
+      </div>
+    </section>
+
+    <!-- Controles -->
+    <section class="glass p-5 flex flex-wrap items-center gap-4 text-base">
+      <div class="flex items-center gap-3">
+        <label class="text-slate-300">Fecha</label>
+        <input id="inp-date" type="date" class="px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800" />
+      </div>
+      <div class="flex items-center gap-3">
+        <label class="text-slate-300">Canchas</label>
+        <div class="relative">
+          <button id="btn-courts" class="px-4 py-2.5 rounded-2xl btn">Todas</button>
+          <div id="dd-courts" class="hidden absolute z-10 mt-2 w-64 glass p-3">
+            <label class="flex items-center gap-2 p-1 text-base"><input type="checkbox" class="court-check" value="Cancha 1" checked/> Cancha 1</label>
+            <label class="flex items-center gap-2 p-1 text-base"><input type="checkbox" class="court-check" value="Cancha 2" checked/> Cancha 2</label>
+            <label class="flex items-center gap-2 p-1 text-base"><input type="checkbox" class="court-check" value="Cancha 3" checked/> Cancha 3</label>
+            <label class="flex items-center gap-2 p-1 text-base"><input type="checkbox" class="court-check" value="Cancha 4" checked/> Cancha 4</label>
+            <label class="flex items-center gap-2 p-1 text-base"><input type="checkbox" class="court-check" value="Cancha 5" checked/> Cancha 5</label>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <label class="text-slate-300">Estados</label>
+        <div class="flex flex-wrap gap-2">
+          <button data-state="confirmed" class="chip px-4 py-2 rounded-full">Confirmados</button>
+          <button data-state="cancelled" class="chip px-4 py-2 rounded-full">Cancelados</button>
+          <button data-state="noshow" class="chip px-4 py-2 rounded-full">No‑show</button>
+          <button data-state="fugaz" class="chip px-4 py-2 rounded-full">Fugaces</button>
+        </div>
+      </div>
+      <div class="ml-auto flex items-center gap-3 text-sm md:text-base">
+        <span class="text-slate-300">Leyenda:</span>
+        <span class="inline-flex items-center gap-1"><span class="w-3.5 h-3.5 rounded-sm" style="background:var(--past)"></span><span>Pasado</span></span>
+        <span class="inline-flex items-center gap-1"><span class="w-3.5 h-3.5 rounded-sm" style="background:var(--now)"></span><span>En curso</span></span>
+        <span class="inline-flex items-center gap-1"><span class="w-3.5 h-3.5 rounded-sm" style="background:var(--ok)"></span><span>Confirmado</span></span>
+        <span class="inline-flex items-center gap-1"><span class="w-3.5 h-3.5 rounded-sm" style="background:var(--bad)"></span><span>Cancelado</span></span>
+        <span class="inline-flex items-center gap-1"><span class="w-3.5 h-3.5 rounded-sm" style="background:var(--noshow)"></span><span>No‑show</span></span>
+      </div>
+    </section>
+
+    <!-- Turnero -->
+    <section class="glass p-0 overflow-hidden">
+      <div class="border-b border-slate-800 p-4 flex items-center justify-between text-base">
+        <!--<div class="text-slate-300">Zona horaria: America/Argentina/Cordoba</div>-->
+        <div class="text-slate-300">Click vacío = crear • Click reserva = ver/editar</div>
+      </div>
+      <div id="schedule-grid" class="overflow-auto">
+        <div id="schedule-inner" class="relative min-w-[1040px] scroll-gradient"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Detalle / Crear -->
+  <div id="modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm grid place-items-center p-4">
+    <div class="glass w-full max-w-2xl">
+      <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+        <h3 id="modal-title" class="text-xl font-semibold">Detalle de turno</h3>
+        <button id="modal-close" class="p-2 hover:bg-slate-800/60 rounded-md"><i data-lucide="x" class="w-6 h-6"></i></button>
+      </div>
+      <div class="p-5 space-y-5 text-base">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs text-slate-400">Cancha</label>
+            <input id="m-court" class="w-full px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-400">Inicio</label>
+              <input id="m-start" class="w-full px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800" />
+            </div>
+            <div>
+              <label class="text-xs text-slate-400">Fin</label>
+              <input id="m-end" class="w-full px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800" />
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs text-slate-400">Estado</label>
+            <select id="m-status" class="w-full px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800">
+              <option value="confirmed">Confirmado</option>
+              <option value="cancelled">Cancelado</option>
+              <option value="noshow">No‑show</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Tipo</label>
+            <select id="m-type" class="w-full px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800">
+              <option value="normal">Normal</option>
+              <option value="fugaz">Fugaz</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">Jugadores</label>
+          <div id="m-players" class="mt-2 flex flex-wrap gap-2"></div>
+          <p id="m-lock-msg" class="hidden text-amber-400 text-sm mt-2">Este turno ya pasó. Podés eliminarlo o editar jugadores, pero <b>no</b> cambiar estado ni tipo.</p>
+        </div>
+      </div>
+      <div class="p-5 border-t border-slate-800 flex items-center justify-between">
+        <button id="btn-delete" class="px-4 py-2.5 rounded-2xl btn hover:bg-slate-800/70 flex items-center gap-2 text-red-300"><i data-lucide="trash-2"></i>Eliminar</button>
+        <div class="flex items-center gap-2">
+          <button id="btn-duplicate" class="px-4 py-2.5 rounded-2xl btn hover:bg-slate-800/70">Duplicar</button>
+          <button id="btn-save" class="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Error -->
+  <div id="modal-error" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm grid place-items-center p-4">
+    <div class="glass w-full max-w-md">
+      <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+        <h3 class="text-xl font-semibold text-red-300">Acción no permitida</h3>
+        <button id="modal-error-close" class="p-2 hover:bg-slate-800/60 rounded-md"><i data-lucide="x" class="w-6 h-6"></i></button>
+      </div>
+      <div class="p-5 text-base">
+        <p id="modal-error-text">No se puede crear un turno si ya se pasó el horario.</p>
+      </div>
+      <div class="p-5 border-t border-slate-800 text-right">
+        <button id="modal-error-ok" class="px-4 py-2.5 rounded-2xl bg-slate-800/70 hover:bg-slate-800">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+
+    // ===== Lucide & Sidebar active =====
+    document.addEventListener('DOMContentLoaded', () => {
+      window.lucide && lucide.createIcons();
+      const href = location.href;
+      const active = href.includes('canchas') ? 'canchas' : (href.includes('report') ? 'reports' : 'home');
+      document.querySelectorAll('.sidebtn').forEach(a => {
+        a.classList.toggle('sidebtn-active', a.dataset.route === active);
+      });
+    });
+
+    // ======= Datos de ejemplo =======
+    const TIMEZONE = 'America/Argentina/Cordoba';
+    const START_H = 8;   // 08:00
+    const END_H   = 24;  // 24:00
+    const COURTS = ['Cancha 1','Cancha 2','Cancha 3','Cancha 4','Cancha 5'];
+
+    // Precio por hora estimado por cancha (ARS)
+    const COURT_PRICES = {
+      'Cancha 1': 8000,
+      'Cancha 2': 9000,
+      'Cancha 3': 7000,
+      'Cancha 4': 8000,
+      'Cancha 5': 8000
+    };
+
+    const fmtARS = (v) => new Intl.NumberFormat('es-AR', { style:'currency', currency:'ARS', maximumFractionDigits:0 }).format(v);
+
+    // bookings: key `${row}-${courtIndex}`
+    // status: confirmed | cancelled | noshow
+    // type: normal | fugaz
+    const bookings = {
+      '10-0': { status:'confirmed', type:'normal', players:['Sofi','Martín','Lu','Pablo'] },
+      '11-2': { status:'confirmed', type:'fugaz',  players:['?','?','Ale','?'] },
+      '13-1': { status:'cancelled', type:'normal', players:['Nico','Gus','Mati','Leo'] },
+      '18-3': { status:'confirmed', type:'normal', players:['Ana','Bauti','Caru','Nati'] },
+      '19-1': { status:'noshow',    type:'normal', players:['—','—','—','—'] },
+    };
+
+    const COLORS = { past:'var(--past)', now:'var(--now)', confirmed:'var(--ok)', cancelled:'var(--bad)', noshow:'var(--noshow)' };
+
+    // ======= Helpers =======
+    const pad = n => String(n).padStart(2,'0');
+    const hourLabel = h => `${pad(h)}:00`;
+
+    function getNowParts(){
+      try{
+        const parts = new Intl.DateTimeFormat('es-AR',{ hour:'2-digit', minute:'2-digit', hourCycle:'h23', timeZone: TIMEZONE }).formatToParts(new Date());
+        const h = parseInt(parts.find(p=>p.type==='hour').value,10);
+        const m = parseInt(parts.find(p=>p.type==='minute').value,10);
+        return { h, m };
+      }catch{ return {h:12,m:0}; }
+    }
+
+    // ======= UI refs =======
+    const gridEl   = document.getElementById('schedule-inner');
+    const ddCourts = document.getElementById('dd-courts');
+    const btnCourts= document.getElementById('btn-courts');
+
+    function selectedCourts(){
+      const checks = [...document.querySelectorAll('.court-check')];
+      const actives = checks.filter(c=>c.checked).map(c=>c.value);
+      btnCourts.textContent = actives.length === COURTS.length ? 'Todas' : `${actives.length} seleccionadas`;
+      return actives;
+    }
+
+    function buildGrid(){
+      gridEl.innerHTML = '';
+      const courts = selectedCourts();
+
+      // Header
+      const header = document.createElement('div');
+      header.className = `grid border-b border-slate-800 bg-slate-900/50`;
+      header.style.gridTemplateColumns = `140px repeat(${courts.length}, 1fr)`;
+      header.innerHTML = `<div class=\"p-4 text-base text-slate-300\">&nbsp;</div>` + courts.map(c=>`<div class=\"p-4 text-center text-base text-slate-200 font-medium\">${c}</div>`).join('');
+      gridEl.appendChild(header);
+
+      // Rows
+      for(let r=START_H; r<END_H; r++){
+        const row = document.createElement('div');
+        row.className = 'grid border-b border-slate-900/60';
+        row.style.gridTemplateColumns = `140px repeat(${courts.length}, 1fr)`;
+
+        const timeCell = document.createElement('div');
+        timeCell.className = 'p-4 text-base text-slate-300 border-r border-slate-900/60';
+        timeCell.textContent = `${hourLabel(r)} – ${hourLabel(r+1)}`;
+        row.appendChild(timeCell);
+
+        courts.forEach(courtName => {
+          const cIndex = COURTS.indexOf(courtName);
+          const slot = document.createElement('div');
+          slot.className = 'relative h-20';
+          slot.dataset.row = r; slot.dataset.court = cIndex;
+
+          // Reserva existente?
+          const key = `${r}-${cIndex}`;
+          const b = bookings[key];
+          if(b){
+            const block = document.createElement('button');
+            block.type = 'button';
+            block.className = 'absolute inset-2 rounded-lg booking-block p-3 text-left';
+            block.dataset.row = r; block.dataset.court = cIndex; block.dataset.status = b.status; block.dataset.type = b.type;
+            block.style.background = colorFor(r, b.status);
+            block.innerHTML = `
+              <div class=\"flex items-center justify-between\">
+                <div class=\"flex items-center gap-2\">
+                  <i data-lucide=\"users\" class=\"w-5 h-5\"></i>
+                  <span class=\"text-base font-medium\">${b.players.filter(x=>x!==undefined).slice(0,2).join(', ')}${b.players.length>2?'…':''}</span>
+                </div>
+                ${b.type==='fugaz' ? `<span class=\"badge px-2 py-0.5 rounded-full bg-emerald-900/60 border border-emerald-700\">FUGAZ</span>` : ''}
+              </div>
+              <div class=\"text-[12.5px] text-white/85\">${courtName} • ${hourLabel(r)}</div>
+            `;
+            slot.appendChild(block);
+          } else {
+            // Crear turno en vacío
+            const createBtn = document.createElement('button');
+            createBtn.type = 'button';
+            createBtn.className = 'group absolute inset-2 rounded-lg grid place-items-center border border-transparent text-slate-300/0 hover:text-slate-200 hover:border-slate-600/80 transition-colors';
+            createBtn.setAttribute('aria-label','Crear turno');
+            createBtn.innerHTML = '<i data-lucide="plus" class="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity"></i>';
+            createBtn.addEventListener('click', () => tryCreate(r, cIndex));
+            slot.appendChild(createBtn);
+          }
+          row.appendChild(slot);
+        });
+        gridEl.appendChild(row);
+      }
+
+      // Línea de ahora
+      drawNowLine();
+      if(window.lucide) lucide.createIcons();
+      refreshKPIs();
+      refreshRevenue();
+      applyFilters();
+    }
+
+    function colorFor(row, status){
+      const {idx} = currentRowIndex();
+      if(row < idx) return COLORS.past;   // pasado
+      if(row === idx) return COLORS.now;  // en curso
+      return COLORS[status] || COLORS.confirmed;
+    }
+
+    function currentRowIndex(){
+      const {h, m} = getNowParts();
+      let idx = h; // 0..24
+      if(idx < START_H) return { idx: START_H-1, minute: m, before:true };
+      if(idx >= END_H) return { idx: END_H, minute: m, after:true };
+      return { idx, minute: m };
+    }
+
+    function drawNowLine(){
+      const container = gridEl;
+      const header = container.children[0];
+      const firstRow = container.children[1];
+      if(!header || !firstRow) return;
+      const headerH = header.offsetHeight;
+      const rowH = firstRow.offsetHeight;
+      const { idx, minute, before, after } = currentRowIndex();
+      let top = headerH;
+      if(before) top = headerH; else if(after) top = headerH + (container.children.length-1) * rowH; else top = headerH + (idx - START_H) * rowH + (minute/60)*rowH;
+
+      let line = document.getElementById('now-line');
+      if(!line){
+        line = document.createElement('div');
+        line.id = 'now-line';
+        Object.assign(line.style, { position:'absolute', left:0, right:0, height:'3px', background: 'var(--warn)' });
+        container.appendChild(line);
+      }
+      line.style.top = `${top}px`;
+    }
+
+    // ======= KPIs =======
+    function refreshKPIs(){
+      const totalSlots = ( END_H - START_H ) * selectedCourts().length;
+      const keys = Object.keys(bookings);
+      const upcoming = keys.filter(k => {
+        const r = parseInt(k.split('-')[0],10); return r >= START_H && r < END_H; });
+      const conf = upcoming.filter(k => bookings[k].status==='confirmed').length;
+      const canc = upcoming.filter(k => bookings[k].status==='cancelled').length;
+      const occ = Math.round((upcoming.length / Math.max(totalSlots,1)) * 100);
+      document.getElementById('kpi-occ').textContent = isFinite(occ)? `${occ}%` : '0%';
+      document.getElementById('kpi-conf').textContent = conf;
+      document.getElementById('kpi-canc').textContent = canc;
+    }
+
+
+    function refreshRevenue(){
+      // suma de todas las reservas confirmadas del día y de las canchas seleccionadas
+      const actives = selectedCourts();
+      let total = 0;
+      for(const key of Object.keys(bookings)){
+        const [rowStr, courtIdxStr] = key.split('-');
+        const row = parseInt(rowStr,10);
+        if(row < START_H || row >= END_H) continue;
+        const courtIdx = parseInt(courtIdxStr,10);
+        const courtName = COURTS[courtIdx];
+        if(!actives.includes(courtName)) continue;
+        const b = bookings[key];
+        if(b.status === 'confirmed'){
+          const price = COURT_PRICES[courtName] ?? 0;
+          total += price; // 1 hora por reserva
+        }
+      }
+      const el = document.getElementById('kpi-rev');
+      if(el) el.textContent = fmtARS(total);
+    }
+
+    // ======= Modal =======
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const mCourt = document.getElementById('m-court');
+    const mStart = document.getElementById('m-start');
+    const mEnd = document.getElementById('m-end');
+    const mStatus = document.getElementById('m-status');
+    const mType = document.getElementById('m-type');
+    const mPlayers = document.getElementById('m-players');
+    const mLockMsg = document.getElementById('m-lock-msg');
+
+    let modalCtx = null; // { row, court }
+
+    function openModal(ctx){
+      modalCtx = ctx;
+      const { row, court } = ctx;
+      const key = `${row}-${court}`;
+      const b = bookings[key] || { status:'confirmed', type:'normal', players:['','','',''] };
+      const isPast = row < getNowParts().h;
+
+      modalTitle.textContent = bookings[key] ? 'Detalle de turno' : 'Crear turno';
+      mCourt.value = COURTS[court];
+      mStart.value = `${hourLabel(row)}`;
+      mEnd.value = `${hourLabel(row+1)}`;
+      mStatus.value = b.status;
+      mType.value = b.type;
+      mPlayers.innerHTML = '';
+      b.players.forEach((p,i)=>{
+        const inp = document.createElement('input');
+        inp.className = 'px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800';
+        inp.placeholder = `Jugador ${i+1}`;
+        inp.value = p || '';
+        mPlayers.appendChild(inp);
+      });
+
+      // Lock de estado/tipo si es pasado
+      if(isPast){
+        mStatus.classList.add('disabled'); mStatus.disabled = true;
+        mType.classList.add('disabled');   mType.disabled = true;
+        mLockMsg.classList.remove('hidden');
+      }else{
+        mStatus.classList.remove('disabled'); mStatus.disabled = false;
+        mType.classList.remove('disabled');   mType.disabled = false;
+        mLockMsg.classList.add('hidden');
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal(){ modal.classList.add('hidden'); }
+
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
+
+    document.getElementById('btn-save').addEventListener('click', ()=>{
+      if(!modalCtx) return;
+      const { row, court } = modalCtx;
+      const key = `${row}-${court}`;
+      const isPast = row < getNowParts().h;
+      const prev = bookings[key] || {};
+      bookings[key] = {
+        status: isPast ? (prev.status || 'confirmed') : mStatus.value,
+        type:   isPast ? (prev.type   || 'normal')    : mType.value,
+        players: [...mPlayers.querySelectorAll('input')].map(i=>i.value || '?')
+      };
+      buildGrid();
+      closeModal();
+    });
+
+    document.getElementById('btn-delete').addEventListener('click', ()=>{
+      if(!modalCtx) return; const key = `${modalCtx.row}-${modalCtx.court}`; delete bookings[key]; buildGrid(); closeModal();
+    });
+
+    document.getElementById('btn-duplicate').addEventListener('click', ()=>{
+      if(!modalCtx) return; const { row, court } = modalCtx; const key = `${row}-${court}`; const b = bookings[key]; if(!b) return;
+      // busca el próximo hueco en la misma cancha
+      for(let r=row+1; r<END_H; r++){ const k = `${r}-${court}`; if(!bookings[k]){ bookings[k] = JSON.parse(JSON.stringify(b)); break; } }
+      buildGrid();
+    });
+
+    // ======= Crear en pasado -> error =======
+    const modalErr = document.getElementById('modal-error');
+    const modalErrText = document.getElementById('modal-error-text');
+    const closeErr = () => modalErr.classList.add('hidden');
+    document.getElementById('modal-error-close').addEventListener('click', closeErr);
+    document.getElementById('modal-error-ok').addEventListener('click', closeErr);
+
+    function showError(msg){ modalErrText.textContent = msg; modalErr.classList.remove('hidden'); }
+
+    function tryCreate(row, court){
+      const nowH = getNowParts().h;
+      if(row < nowH){
+        showError('No se puede crear un turno si ya se pasó el horario.');
+        return;
+      }
+      openModal({row, court});
+    }
+
+    // ======= Filtros por estado / fugaz =======
+    function activeFilters(){
+      const btns = [...document.querySelectorAll('[data-state]')];
+      // status buttons (mutually exclusive)
+      const statusBtns = btns.filter(b => b.dataset.state!=='fugaz');
+      const activeStatus = statusBtns.find(b => b.dataset.active==='true');
+      const states = new Set(activeStatus ? [activeStatus.dataset.state] : []);
+      // fugaz toggle is independent
+      const fugaz = btns.find(b=>b.dataset.state==='fugaz')?.dataset.active === 'true';
+      return { states, fugaz };
+    }
+
+    function applyFilters(){
+      const { states, fugaz } = activeFilters();
+      document.querySelectorAll('.booking-block').forEach(el=>{
+        const st = el.dataset.status; 
+        const tp = el.dataset.type;
+        let show;
+        if(states.size===0 && !fugaz){
+          // all deselected -> show everything
+          show = true;
+        }else{
+          const statusMatch = states.size>0 && states.has(st);
+          const fugazMatch  = fugaz && tp==='fugaz';
+          // union: show if matches selected status OR is fugaz when fugaz is toggled
+          show = statusMatch || fugazMatch;
+        }
+        el.style.display = show ? '' : 'none';
+      });
+    }
+
+    function initFilterButtons(){
+      // start all deselected
+      document.querySelectorAll('[data-state]').forEach(btn=>{
+        btn.dataset.active = 'false';
+        btn.classList.remove('chip-active');
+        btn.addEventListener('click', ()=>{
+          const st = btn.dataset.state;
+          if(st==='fugaz'){
+            // toggle independent
+            const isOn = btn.dataset.active==='true';
+            btn.dataset.active = isOn ? 'false' : 'true';
+            btn.classList.toggle('chip-active', !isOn);
+          }else{
+            // mutually exclusive among status buttons
+            const isOn = btn.dataset.active==='true';
+            // turn all off first
+            document.querySelectorAll('[data-state="confirmed"],[data-state="cancelled"],[data-state="noshow"]').forEach(b=>{
+              b.dataset.active='false'; b.classList.remove('chip-active');
+            });
+            // then, if it was off, turn this on; if it was on, leave all off (allow unselect)
+            if(!isOn){
+              btn.dataset.active='true'; btn.classList.add('chip-active');
+            }
+          }
+          applyFilters();
+        });
+      });
+      applyFilters();
+    }
+
+    // ======= Interacciones =======
+    document.getElementById('btn-courts').addEventListener('click', ()=> ddCourts.classList.toggle('hidden'));
+    ddCourts.addEventListener('click', (e)=>{ if(e.target.matches('.court-check')) buildGrid(); });
+    document.addEventListener('click', (e)=>{ if(!ddCourts.contains(e.target) && e.target!==document.getElementById('btn-courts')) ddCourts.classList.add('hidden'); });
+
+    // click en reservas existentes -> abrir modal
+    gridEl.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.booking-block');
+      if(btn){
+        const row = +btn.dataset.row; const court = +btn.dataset.court; openModal({row, court});
+      }
+    });
+
+    // ======= Init =======
+    document.addEventListener('DOMContentLoaded', ()=>{
+      if(window.lucide) lucide.createIcons();
+      const today = new Date();
+      document.getElementById('inp-date').valueAsDate = today;
+      initFilterButtons();
+      buildGrid();
+      setInterval(()=>{ drawNowLine(); }, 30*1000);
+      window.addEventListener('resize', drawNowLine);
+      document.addEventListener('visibilitychange', ()=> !document.hidden && drawNowLine());
+    });
+  </script>
+</body>
+</html>

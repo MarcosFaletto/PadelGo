@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Configurar Canchas • Admin v2.2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root{
+      --panel: rgba(15,23,42,.65);
+      --border:#1f2937;
+      --muted:#94a3b8;
+      --ok:#10B981; --bad:#EF4444; --warn:#F59E0B;
+    }
+    .glass{background:var(--panel); border:1px solid var(--border); border-radius:18px; box-shadow:0 0 0 1px rgba(15,23,42,.25) inset, 0 10px 30px rgba(0,0,0,.25)}
+    .btn{border:1px solid var(--border); background:rgba(15,23,42,.6)}
+    .chip{background:rgba(15,23,42,.55); border:1px solid var(--border)}
+    .sidebtn-active{outline: 2px solid rgb(34 197 94 / .35); background: rgb(30 41 59 / .9) !important;}
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 text-[16px] md:text-[17px]">
+  <!-- Sidebar -->
+  <aside class="fixed inset-y-0 left-0 w-16 bg-slate-900/60 border-r border-slate-800 p-3 flex flex-col items-center gap-3">
+    <a href="index.updated.html" class="w-full aspect-square rounded-2xl btn grid place-items-center sidebtn" aria-label="Turnero" title="Turnero" data-route="home"><i data-lucide="home" class="h-6 w-6"></i></a>
+    <a href="canchas.updated.html" class="w-full aspect-square rounded-2xl btn grid place-items-center sidebtn" aria-label="Canchas" title="Canchas" data-route="canchas"><i data-lucide="settings" class="h-6 w-6"></i></a>
+    <a href="report.updated.html" class="w-full aspect-square rounded-2xl btn grid place-items-center sidebtn" aria-label="Reportes" title="Reportes" data-route="reports"><i data-lucide="bar-chart-3" class="h-6 w-6"></i></a>
+  </aside>
+
+  <!-- Main -->
+  <main class="ml-[4.75rem] p-6 md:p-8 space-y-6">
+    <header class="flex items-center justify-between">
+      <h1 class="text-3xl md:text-4xl font-semibold tracking-tight">Configuración de canchas</h1>
+      <div class="flex items-center gap-3">
+        <div class="relative hidden sm:block">
+          <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"></i>
+          <input id="search" placeholder="Buscar cancha…" class="pl-10 pr-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800"/>
+        </div>
+        <button id="btn-add" class="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 flex items-center gap-2"><i data-lucide="plus"></i><span>Nueva cancha</span></button>
+      </div>
+    </header>
+
+    <!-- Filtros (DDL) -->
+    <section class="glass p-5 flex flex-wrap items-center gap-4 text-base">
+      <div class="flex items-center gap-2">
+        <label for="f-type" class="text-slate-300">Tipo</label>
+        <select id="f-type" class="px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800 min-w-[180px]">
+          <option value="" selected>— sin filtro —</option>
+          <option value="Indoor">Indoor</option>
+          <option value="Outdoor">Outdoor</option>
+        </select>
+      </div>
+      <div class="flex items-center gap-2">
+        <label for="f-active" class="text-slate-300">Estado</label>
+        <select id="f-active" class="px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800 min-w-[180px]">
+          <option value="" selected>— sin filtro —</option>
+          <option value="true">Activas</option>
+          <option value="false">Inactivas</option>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-2 ml-auto">
+        <label for="f-price-all" class="text-slate-300">Precio general (ARS)</label>
+        <input id="f-price-all" type="number" min="0" step="100" class="px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800 min-w-[160px]" placeholder="$">
+        <button id="btn-apply-global-price" class="px-3 py-2 rounded-2xl btn"><i data-lucide="check"></i><span>Aplicar a todas</span></button>
+      </div>
+      
+    </section>
+
+    <!-- Grid de canchas -->
+    <section id="court-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></section>
+
+    <!-- ===== Servicios del club (nuevo configurador global) ===== -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <h2 class="text-2xl font-semibold tracking-tight">Servicios del club</h2>
+        <div class="flex items-center gap-3">
+          <div class="relative hidden sm:block">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"></i>
+            <input id="svc-search" placeholder="Buscar servicio…" class="pl-10 pr-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800"/>
+          </div>
+          <label class="text-slate-300">Estado</label>
+          <select id="svc-filter" class="px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800 min-w-[180px]">
+            <option value="" selected>— sin filtro —</option>
+            <option value="true">Activos</option>
+            <option value="false">Inactivos</option>
+          </select>
+          <button id="svc-add" class="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 flex items-center gap-2"><i data-lucide="plus"></i><span>Nuevo servicio</span></button>
+        </div>
+      </div>
+      <div class="glass p-4">
+        <div id="svc-list" class="divide-y divide-slate-800">
+          <!-- filas -->
+        </div>
+      </div>
+    </section>
+  
+    <!-- ===== Configurador de horarios ===== -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <h2 class="text-2xl font-semibold tracking-tight">Configurador de horarios</h2>
+      </div>
+      <div class="glass p-5">
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="text-slate-300">
+                <th class="text-left py-2">Día</th>
+                <th class="text-left py-2">Apertura</th>
+                <th class="text-left py-2">Cierre</th>
+              </tr>
+            </thead>
+            <tbody id="sched-body">
+              <!-- filas dinámicas -->
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-4 flex items-center justify-end gap-2">
+          <button id="btn-copy-mon" class="px-3 py-2 rounded-2xl btn"><i data-lucide="copy"></i><span>Copiar lunes a todos</span></button>
+          <button id="btn-save-sched" class="px-4 py-2.5 rounded-2xl bg-emerald-600/90 hover:bg-emerald-600 text-slate-50"><i data-lucide="save"></i><span>Guardar horarios</span></button>
+        </div>
+      </div>
+    </section>
+    
+  </main>
+
+  <!-- Modal crear/editar cancha (sin servicios por cancha) -->
+  <div id="modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm grid place-items-center p-4">
+    <div class="glass w-full max-w-2xl">
+      <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+        <h3 id="modal-title" class="text-xl font-semibold">Nueva cancha</h3>
+        <button id="modal-close" class="p-2 hover:bg-slate-800/60 rounded-md"><i data-lucide="x" class="w-6 h-6"></i></button>
+      </div>
+      <div class="p-5 space-y-5 text-base">
+        <div class="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-4">
+          <div>
+            <div class="aspect-video rounded-xl border border-slate-800 bg-slate-900/60 grid place-items-center overflow-hidden" id="photo-box">
+              <span class="text-sm text-slate-400">Sin foto</span>
+            </div>
+            <label class="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-2xl btn cursor-pointer">
+              <i data-lucide="image"></i>
+              <span>Subir foto</span>
+              <input id="m-photo" type="file" accept="image/*" class="hidden" />
+            </label>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="md:col-span-2">
+              <label class="text-xs text-slate-400">Nombre</label>
+              <input id="m-name" class="w-full px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800" placeholder="Ej: Cancha 1"/>
+            </div>
+            <div>
+              <label class="text-xs text-slate-400">Tipo</label>
+              <select id="m-type" class="w-full px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800">
+                <option>Indoor</option>
+                <option>Outdoor</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-slate-400">Precio por hora</label>
+              <input id="m-price" type="number" min="0" step="100" class="w-full px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800" placeholder="$"/>
+            </div>
+            <div class="md:col-span-2">
+              <label class="text-xs text-slate-400">Activa</label>
+              <div>
+                <label class="inline-flex items-center gap-2"><input id="m-active" type="checkbox" checked class="rounded"/><span class="text-slate-300">Visible para reservas</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="p-5 border-t border-slate-800 flex items-center justify-between">
+        <button id="btn-delete" class="px-4 py-2.5 rounded-2xl btn text-red-300 hover:bg-slate-800/70 hidden"><i data-lucide="trash-2" class="mr-2"></i>Eliminar</button>
+        <div class="flex items-center gap-2">
+          <button id="btn-cancel" class="px-4 py-2.5 rounded-2xl btn hover:bg-slate-800/70">Cancelar</button>
+          <button id="btn-save" class="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal servicio -->
+  <div id="svc-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm grid place-items-center p-4">
+    <div class="glass w-full max-w-md">
+      <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+        <h3 id="svc-title" class="text-xl font-semibold">Nuevo servicio</h3>
+        <button id="svc-close" class="p-2 hover:bg-slate-800/60 rounded-md"><i data-lucide="x" class="w-6 h-6"></i></button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div>
+          <label class="text-xs text-slate-400">Nombre del servicio</label>
+          <input id="svc-name" class="w-full px-4 py-2.5 rounded-2xl bg-slate-900/60 border border-slate-800" placeholder="Ej: Ducha"/>
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">Activo</label>
+          <div><label class="inline-flex items-center gap-2"><input id="svc-active" type="checkbox" checked/><span class="text-slate-300">Visible para usuarios</span></label></div>
+        </div>
+      </div>
+      <div class="p-5 border-t border-slate-800 text-right">
+        <button id="svc-save" class="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Nav active =====
+    document.addEventListener('DOMContentLoaded', () => {
+      window.lucide && lucide.createIcons();
+      const map = { home:/index\.html$/i, canchas:/canchas\.html$/i, reports:/report\.html$/i };
+      const path = location.pathname;
+      document.querySelectorAll('.sidebtn').forEach(a=>{
+        const key = a.dataset.route;
+        const isActive = (map[key] && map[key].test(path)) || (key==='canchas' && !map.home.test(path) && !map.reports.test(path));
+        if(isActive) a.classList.add('sidebtn-active');
+      });
+
+      // Global price apply
+      document.getElementById('btn-apply-global-price')?.addEventListener('click', ()=>{
+        const val = parseInt(document.getElementById('f-price-all')?.value || '0', 10);
+        if(!isFinite(val) || val<=0) { alert('Ingresá un precio válido'); return; }
+        courts = courts.map(c => ({...c, price: val}));
+        localStorage.setItem('globalPriceARS', String(val));
+        localStorage.setItem('courts', JSON.stringify(courts));
+        render();
+      });
+      const savedGlobal = localStorage.getItem('globalPriceARS');
+      if(savedGlobal && document.getElementById('f-price-all')){
+        document.getElementById('f-price-all').value = savedGlobal;
+      }
+      
+      // Inicializar listados y filtros
+      render();
+      renderServices();
+      document.getElementById('f-type')?.addEventListener('change', render);
+      document.getElementById('f-active')?.addEventListener('change', render);
+      document.getElementById('svc-search')?.addEventListener('input', renderServices);
+      document.getElementById('svc-filter')?.addEventListener('change', renderServices);
+    });
+    
+
+    // ===== Data de ejemplo =====
+    const grid = document.getElementById('court-grid');
+    const search = document.getElementById('search');
+    let courts = [
+      {id:1, name:'Cancha 1', type:'Indoor', price:8000, active:true, photo:''},
+      {id:2, name:'Cancha Central', type:'Outdoor', price:9000, active:true, photo:''},
+      {id:3, name:'Cancha 3', type:'Outdoor', price:7000, active:false, photo:''},
+    ];
+
+    // Servicios del club (globales)
+    let services = [
+      {id:101, name:'Agua', active:true},
+      {id:102, name:'Ducha', active:false},
+      {id:103, name:'Estacionamiento', active:true},
+    ];
+
+    // ===== Courts =====
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const mName = document.getElementById('m-name');
+    const mType = document.getElementById('m-type');
+    const mPrice = document.getElementById('m-price');
+    const mActive = document.getElementById('m-active');
+    const mPhoto = document.getElementById('m-photo');
+    const photoBox = document.getElementById('photo-box');
+    const btnSave = document.getElementById('btn-save');
+    const btnCancel = document.getElementById('btn-cancel');
+    const btnDelete = document.getElementById('btn-delete');
+    const btnAdd = document.getElementById('btn-add');
+
+    let editingId = null;
+
+    function render(){
+      const q = (search?.value || '').toLowerCase();
+      const typeVal = document.getElementById('f-type')?.value || '';
+      const actVal  = document.getElementById('f-active')?.value || '';
+
+      grid.innerHTML = '';
+      courts
+        .filter(c=> !q || c.name.toLowerCase().includes(q))
+        .filter(c=> !typeVal || c.type===typeVal)
+        .filter(c=> !actVal || String(c.active)===actVal)
+        .forEach(c=> grid.appendChild(card(c)));
+      if(window.lucide) lucide.createIcons();
+    }
+
+    function card(c){
+    const el = document.createElement('div');
+    el.className = 'glass p-4 flex gap-4'; // sin overlay absoluto
+
+    el.innerHTML = `
+        <div class="w-40 flex-shrink-0">
+        <div class="aspect-video rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden grid place-items-center">
+            ${c.photo ? `<img src="${c.photo}" class="w-full h-full object-cover"/>` : '<span class="text-sm text-slate-400">Sin foto</span>'}
+        </div>
+        </div>
+
+        <div class="flex-1 min-w-0">
+        <div class="flex items-start justify-between gap-3">
+            <div>
+            <h3 class="text-xl font-semibold">${c.name}</h3>
+            <div class="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                <span class="px-2.5 py-1 rounded-full border border-slate-800 bg-slate-900/60">${c.type}</span>
+                <span class="px-2.5 py-1 rounded-full border border-slate-800 bg-slate-900/60">$${c.price}/h</span>
+                ${c.active
+                ? '<span class="px-2.5 py-1 rounded-full bg-emerald-600/25 border border-emerald-700 text-emerald-300">Activa</span>'
+                : '<span class="px-2.5 py-1 rounded-full bg-slate-700/40 border border-slate-600 text-slate-300">Inactiva</span>'}
+            </div>
+            </div>
+        </div>
+
+        <!-- Acciones: fila propia, chico y a la derecha -->
+        <div class="mt-3 flex flex-wrap justify-end gap-1.5">
+            <a href="index.html"
+            class="px-2.5 py-1.5 rounded-xl btn hover:bg-slate-800/70 flex items-center gap-1.5 text-xs"
+            title="Ver en turnero">
+            <i data-lucide="calendar" class="w-3 h-3"></i><span>Turnero</span>
+            </a>
+            <button class="px-2.5 py-1.5 rounded-xl btn hover:bg-slate-800/70 flex items-center gap-1.5 text-xs"
+                    title="Duplicar" data-action="dup" data-id="${c.id}">
+            <i data-lucide="copy" class="w-3 h-3"></i><span>Duplicar</span>
+            </button>
+            <button class="px-2.5 py-1.5 rounded-xl btn hover:bg-slate-800/70 flex items-center gap-1.5 text-xs"
+                    title="Editar" data-action="edit" data-id="${c.id}">
+            <i data-lucide="pencil" class="w-3 h-3"></i><span>Editar</span>
+            </button>
+            <button class="px-2.5 py-1.5 rounded-xl btn hover:bg-slate-800/70 text-red-300 flex items-center gap-1.5 text-xs"
+                    title="Eliminar" data-action="del" data-id="${c.id}">
+            <i data-lucide="trash-2" class="w-3 h-3"></i><span>Eliminar</span>
+            </button>
+        </div>
+        </div>`;
+
+    el.addEventListener('click', (e)=>{
+        const btn = e.target.closest('button, a');
+        if(!btn) return;
+        const action = btn.dataset.action; const id = +btn.dataset.id;
+        if(action==='edit') openModal(id);
+        if(action==='dup') duplicateCourt(id);
+        if(action==='del') deleteCourt(id);
+    });
+
+    return el;
+    }
+
+
+    function openModal(id){
+      editingId = id || null;
+      const c = courts.find(x=>x.id===id) || {name:'', type:'Indoor', price:'', active:true, photo:''};
+      modalTitle.textContent = id? 'Editar cancha' : 'Nueva cancha';
+      mName.value = c.name; mType.value = c.type; mPrice.value = c.price; mActive.checked = !!c.active; photoBox.innerHTML = c.photo?`<img src="${c.photo}" class="w-full h-full object-cover"/>`:'<span class="text-sm text-slate-400">Sin foto</span>';
+      btnDelete.classList.toggle('hidden', !id);
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal(){ modal.classList.add('hidden'); }
+
+    function save(){
+      const data = { id: editingId || Date.now(), name: mName.value.trim()||'Sin nombre', type: mType.value, price: +mPrice.value||0, active: !!mActive.checked, photo: photoBox.querySelector('img')?.src||'' };
+      if(editingId){
+        courts = courts.map(c=> c.id===editingId ? data : c);
+      }else{ courts.push(data); }
+      closeModal(); render();
+    }
+
+    function deleteCourt(id){
+      courts = courts.filter(c=> c.id!==id); render();
+    }
+
+    function duplicateCourt(id){
+      const base = courts.find(c=>c.id===id); if(!base) return;
+      const copy = JSON.parse(JSON.stringify(base)); copy.id = Date.now(); copy.name = base.name + ' (copia)';
+      courts.push(copy); render();
+    }
+
+    // foto -> preview
+    mPhoto?.addEventListener('change', (e)=>{
+      const file = e.target.files?.[0]; if(!file) return;
+      const url = URL.createObjectURL(file);
+      photoBox.innerHTML = `<img src="${url}" class="w-full h-full object-cover"/>`;
+    });
+
+    // Filtros chips (DDL se hará luego)
+    function initChips(){
+      document.querySelector('[data-filter-type="all"]').classList.add('chip-active');
+      document.querySelector('[data-filter-active="all"]').classList.add('chip-active');
+      document.querySelectorAll('[data-filter-type],[data-filter-active]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const isType = btn.hasAttribute('data-filter-type');
+          const sel = isType? '[data-filter-type]' : '[data-filter-active]';
+          document.querySelectorAll(sel).forEach(x=>x.classList.remove('chip-active'));
+          btn.classList.add('chip-active');
+          render();
+        });
+      });
+    }
+
+    // ====== Servicios (global) ======
+    const svcList = document.getElementById('svc-list');
+    const svcModal = document.getElementById('svc-modal');
+    const svcTitle = document.getElementById('svc-title');
+    const svcName = document.getElementById('svc-name');
+    const svcActive = document.getElementById('svc-active');
+    const svcAddBtn = document.getElementById('svc-add');
+
+    let svcEditingId = null;
+
+    function renderServices(){
+      const svcFilter = document.getElementById('svc-filter')?.value || '';
+      const q = (document.getElementById('svc-search')?.value || '').toLowerCase();
+      svcList.innerHTML = '';
+      services
+        .filter(s=> !svcFilter || String(!!s.active)===svcFilter)
+        .filter(s=> !q || s.name.toLowerCase().includes(q))
+        .forEach(s => {
+          const row = document.createElement('div');
+          row.className = 'flex items-center gap-3 p-3';
+          row.innerHTML = `
+            <div class="flex-1 min-w-0">
+              <div class="text-base font-medium">${s.name}</div>
+              <div class="text-sm text-slate-400">${s.active? 'Activo' : 'Inactivo'}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="px-3 py-2 rounded-2xl btn hover:bg-slate-800/70 flex items-center gap-2" data-action="edit" data-id="${s.id}" title="Editar"><i data-lucide="pencil"></i><span>Editar</span></button>
+              <button class="px-3 py-2 rounded-2xl btn hover:bg-slate-800/70 text-red-300 flex items-center gap-2" data-action="del" data-id="${s.id}" title="Eliminar"><i data-lucide="trash-2"></i><span>Eliminar</span></button>
+            </div>`;
+          row.addEventListener('click', (e)=>{
+            const btn = e.target.closest('button'); if(!btn) return;
+            const id = +btn.dataset.id; const action = btn.dataset.action;
+            if(action==='edit') openService(id);
+            if(action==='del') deleteService(id);
+          });
+          svcList.appendChild(row);
+        });
+      if(window.lucide) lucide.createIcons();
+    }
+    function openService(id){
+      svcEditingId = id || null;
+      const s = services.find(x=>x.id===id) || {name:'', active:true};
+      svcTitle.textContent = id? 'Editar servicio' : 'Nuevo servicio';
+      svcName.value = s.name; svcActive.checked = !!s.active;
+      svcModal.classList.remove('hidden');
+    }
+    function closeService(){ svcModal.classList.add('hidden'); }
+
+    function saveService(){
+      const data = { id: svcEditingId || Date.now(), name: (svcName.value||'').trim()||'Sin nombre', active: !!svcActive.checked };
+      if(svcEditingId){ services = services.map(s=> s.id===svcEditingId? data : s); }
+      else { services.push(data); }
+      closeService(); renderServices();
+    }
+    function deleteService(id){ services = services.filter(s=> s.id!==id); renderServices(); }
+
+    // Wire events
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.getElementById('btn-cancel').addEventListener('click', closeModal);
+    btnSave.addEventListener('click', save);
+    btnAdd.addEventListener('click', ()=> openModal(null));
+    btnDelete.addEventListener('click', ()=>{ if(editingId) deleteCourt(editingId); closeModal(); });
+    search?.addEventListener('input', render);
+
+    document.getElementById('svc-close').addEventListener('click', closeService);
+    document.getElementById('svc-save').addEventListener('click', saveService);
+    document.getElementById('svc-add').addEventListener('click', ()=> openService(null));
+
+    document.addEventListener('DOMContentLoaded', ()=>{ initChips(); render(); renderServices(); });
+  </script>
+
+  <script>
+    // === Configurador de horarios + Precio global (JS dedicado) ===
+    document.addEventListener('DOMContentLoaded', () => {
+      // Precio global (si existe el control)
+      const btnApply = document.getElementById('btn-apply-global-price');
+      if (btnApply) {
+        btnApply.addEventListener('click', () => {
+          const input = document.getElementById('f-price-all');
+          const val = parseInt(input?.value || '0', 10);
+          if (!isFinite(val) || val <= 0) { alert('Ingresá un precio válido'); return; }
+          try {
+            let courts = [];
+            try { courts = JSON.parse(localStorage.getItem('courts') || '[]'); } catch(e){ courts = []; }
+            courts = courts.map(c => ({...c, price: val}));
+            localStorage.setItem('courts', JSON.stringify(courts));
+            localStorage.setItem('globalPriceARS', String(val));
+          } finally {
+            // refrescar si hay render() global
+            if (typeof render === 'function') render();
+          }
+        });
+        const saved = localStorage.getItem('globalPriceARS');
+        if (saved) {
+          const input = document.getElementById('f-price-all');
+          if (input) input.value = saved;
+        }
+      }
+
+      // Horarios
+      const DAYS = [
+        ['lun','Lunes'], ['mar','Martes'], ['mie','Miércoles'],
+        ['jue','Jueves'], ['vie','Viernes'], ['sab','Sábado'], ['dom','Domingo']
+      ];
+      const defaultSchedule = () => Object.fromEntries(DAYS.map(([k])=>[k,{open:'08:00', close:'23:00'}]));
+      const loadSchedule = () => {
+        try { return JSON.parse(localStorage.getItem('clubSchedule') || '') || defaultSchedule(); }
+        catch { return defaultSchedule(); }
+      };
+      const saveSchedule = (s) => localStorage.setItem('clubSchedule', JSON.stringify(s));
+
+      const renderSchedule = () => {
+        const tbody = document.getElementById('sched-body');
+        if (!tbody) return;
+        const s = loadSchedule();
+        tbody.innerHTML = DAYS.map(([k,label])=>`
+          <tr>
+            <td class="py-2 pr-3">${label}</td>
+            <td class="py-2 pr-3">
+              <input type="time" class="px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-800" id="open-${k}" value="\${s[k].open}">
+            </td>
+            <td class="py-2 pr-3">
+              <input type="time" class="px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-800" id="close-${k}" value="\${s[k].close}">
+            </td>
+          </tr>
+        `).join('');
+      };
+      renderSchedule();
+
+      const btnCopy = document.getElementById('btn-copy-mon');
+      if (btnCopy) {
+        btnCopy.addEventListener('click', () => {
+          const open = document.getElementById('open-lun')?.value || '08:00';
+          const close = document.getElementById('close-lun')?.value || '23:00';
+          DAYS.forEach(([k]) => {
+            const o = document.getElementById('open-' + k);
+            const c = document.getElementById('close-' + k);
+            if (o) o.value = open;
+            if (c) c.value = close;
+          });
+        });
+      }
+
+      const btnSave = document.getElementById('btn-save-sched');
+      if (btnSave) {
+        btnSave.addEventListener('click', () => {
+          const next = {};
+          DAYS.forEach(([k]) => {
+            const open = document.getElementById('open-' + k)?.value || '08:00';
+            const close = document.getElementById('close-' + k)?.value || '23:00';
+            next[k] = { open, close };
+          });
+          saveSchedule(next);
+          alert('Horarios guardados');
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>
